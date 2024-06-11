@@ -5,6 +5,8 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import folium
+import simplekml
+import math
 plt.close("all")
 
 def extract_city_info(news_text, country_names):
@@ -32,7 +34,7 @@ def extract_city_info(news_text, country_names):
     return city_info
 
 # Read the news text file with UTF-8 encoding
-with open('C:/Users/niruy/Desktop/weatherradarsites.txt', 'r', encoding='utf-8') as file:
+with open('weatherradarsites.txt', 'r', encoding='utf-8') as file:
     news_text = file.read()
 
 # List of country names
@@ -81,9 +83,38 @@ df[['Latitude', 'Longitude']] = df['Coordinates'].apply(lambda x: pd.Series(extr
 df['Range'] = df['Range'].apply(extract_numeric).astype(float)
     
 #%%
+# Create an instance of Kml
+kml = simplekml.Kml(open=1)
 
+# Function to generate coordinates for a circle
+def generate_circle_coords(center_lon, center_lat, radius_km, num_points=36):
+    coords = []
+    for i in range(num_points):
+        angle = math.radians(float(i) / num_points * 360.0)
+        dx = radius_km * math.cos(angle)
+        dy = radius_km * math.sin(angle)
+        lon = center_lon + (dx / (111.32 * math.cos(math.radians(center_lat))))
+        lat = center_lat + (dy / 111.32)
+        coords.append((lon, lat))
+    coords.append(coords[0])  # Close the circle
+    return coords
 
+# Create a point for each city. The points' properties are assigned after the point is created
+for index, row in df.iterrows():
+    pnt = kml.newpoint()
+    pnt.name = row['City'] + ', ' + row['Country']
+    pnt.description = row['City'] + ', ' + row['Country'] + ', ' + row['Coordinates'] + ', ' + str(row["Range"]) +"km"
+    pnt.coords = [(row['Longitude'], row['Latitude'])]
+    
+    # Create circle
+    circle_coords = generate_circle_coords(row['Longitude'], row['Latitude'], row['Range'])
+    pol = kml.newpolygon(name=row['City'] + ', ' + row['Country'] + ', ' + row['Coordinates'] + ', ' + str(row["Range"]) +"km", outerboundaryis=circle_coords)
+    pol.style.linestyle.width = 2
+    pol.style.polystyle.color = simplekml.Color.changealphaint(35, simplekml.Color.red)  # Blue color with 100 (fully opaque) alpha value
 
+# Save the KML
+kml.save("T00 Point.kml")
+#%%
 m = folium.Map(location=[df['Latitude'].mean(), df['Longitude'].mean()], zoom_start=2)
 # Add markers for each city with a circle indicating range
 for index, row in df.iterrows():
