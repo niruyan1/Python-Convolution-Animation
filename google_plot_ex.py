@@ -133,4 +133,36 @@ for index, row in df.iterrows():
 # Save the map as an HTML file
 m.save('map.html')
 
+#%%
+def create_kml(cities):
+    # Open the KML file for writing
+    with open("cities.kml", "w") as f:
+        # Write the KML header
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        f.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n')
+        f.write('<Document>\n')
+
+        # Write placemarks for each city
+        for city, coords in cities.items():
+            f.write('<Placemark>\n')
+            f.write('<name>{}</name>\n'.format(city))
+            f.write('<Point>\n')
+            f.write('<coordinates>{},{},0</coordinates>\n'.format(coords[1], coords[0]))  # Corrected format: (longitude, latitude)
+            f.write('</Point>\n')
+            f.write('</Placemark>\n')
+
+        # Write the KML footer
+        f.write('</Document>\n')
+        f.write('</kml>')
+
+    print("KML file 'cities.kml' has been created successfully.")
+
+# Coordinates for New York, Los Angeles, and London
+cities = {
+    "New York": (40.7128, -74.0060),
+    "Los Angeles": (34.0522, -118.2437),
+    "London": (51.5074, -0.1278)
+}
+
+create_kml(cities)
 
